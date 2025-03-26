@@ -54,8 +54,8 @@ local keys = {
    { key = 'Backspace',  mods = mod.SUPER,     action = act.SendString '\u{15}' },
 
    -- copy/paste --
-   { key = 'c',          mods = 'CTRL|SHIFT',  action = act.CopyTo('Clipboard') },
-   { key = 'v',          mods = 'CTRL|SHIFT',  action = act.PasteFrom('Clipboard') },
+   { key = 'c',          mods = 'CTRL',  action = act.CopyTo('Clipboard') },
+   { key = 'v',          mods = 'CTRL',  action = act.PasteFrom('Clipboard') },
 
    -- tabs --
    -- tabs: spawn+close
@@ -158,13 +158,13 @@ local keys = {
    -- panes --
    -- panes: split panes
    {
-      key = [[\]],
+      key = 'h',
       mods = mod.SUPER,
       action = act.SplitVertical({ domain = 'CurrentPaneDomain' }),
    },
    {
-      key = [[\]],
-      mods = mod.SUPER_REV,
+      key = 'v',
+      mods = mod.SUPER,
       action = act.SplitHorizontal({ domain = 'CurrentPaneDomain' }),
    },
 
@@ -240,9 +240,51 @@ local mouse_bindings = {
    },
 }
 
+-- Preset layout: Two vertical panes, right pane split horizontally, only on Linux
+if platform.is_linux then
+   wezterm.on('gui-startup', function(cmd)
+      -- Create main window with normal font
+      local tab, pane, main_window = wezterm.mux.spawn_window(cmd or {})
+      local main_gui_window = main_window:gui_window()
+      main_gui_window:maximize()
+      
+      -- Create a second window with smaller font
+      local second_window = wezterm.mux.spawn_window({
+         args = { 'bash', '-c', 'neofetch; exec bash' },
+         position = { x = math.floor(main_gui_window:get_dimensions().pixel_width * 0.75), y = 0 },
+         width = math.floor(main_gui_window:get_dimensions().pixel_width * 0.25),
+         height = math.floor(main_gui_window:get_dimensions().pixel_height * 0.6),
+      })
+      
+      -- Configure second window
+      second_window:gui_window():set_config_overrides({
+         font_size = math.floor(main_gui_window:effective_config().font_size * 0.8),
+         window_decorations = "NONE",
+      })
+      
+      -- Create third window for bottom right
+      local third_window = wezterm.mux.spawn_window({
+         args = { 'htop', '-d', '3' },
+         position = {
+            x = math.floor(main_gui_window:get_dimensions().pixel_width * 0.75),
+            y = math.floor(main_gui_window:get_dimensions().pixel_height * 0.6)
+         },
+         width = math.floor(main_gui_window:get_dimensions().pixel_width * 0.25),
+         height = math.floor(main_gui_window:get_dimensions().pixel_height * 0.4),
+      })
+      
+      -- Configure third window
+      third_window:gui_window():set_config_overrides({
+         font_size = math.floor(main_gui_window:effective_config().font_size * 0.8),
+         window_decorations = "NONE",
+      })
+   end)
+end
+
+
+
 return {
    disable_default_key_bindings = true,
-   -- disable_default_mouse_bindings = true,
    leader = { key = 'Space', mods = mod.SUPER_REV },
    keys = keys,
    key_tables = key_tables,
