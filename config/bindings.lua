@@ -241,18 +241,23 @@ local mouse_bindings = {
 }
 
 -- Preset layout: Two vertical panes, right pane split horizontally, only on Linux
+
 if platform.is_linux then
    wezterm.on('gui-startup', function(cmd)
       -- Create main window with normal font
       local tab, pane, window = mux.spawn_window(cmd or {})
-      window:gui_window():maximize()
+      local gui_window = window:gui_window()
+      gui_window:maximize()
       wezterm.log_info('Initial pane created, ID: ' .. pane:pane_id())
-      -- Split the initial pane vertically (70% left, 30% right)
-      local right_pane = pane:split({ direction = 'Right', size = 0.3, args = { 'bash', '-c', 'neofetch; exec bash' } })
-      wezterm.log_info('Right pane split with neofetch, ID: ' .. right_pane:pane_id())
-      -- Split the right pane horizontally (60% top, 40% bottom)
-      local bottom_pane = right_pane:split({ direction = 'Bottom', size = 0.6, args = { 'htop', '-d', '3' } })
-      wezterm.log_info('Bottom-right pane split with htop, ID: ' .. bottom_pane:pane_id())
+      
+      -- Split the initial pane vertically (75% left, 25% right)
+      local right_pane = pane:split({ 
+         direction = 'Right', 
+         size = 0.32,
+         -- Just create the pane with a shell, don't run macchina yet
+         args = { 'btop' }
+      })
+      wezterm.log_info('Right pane created, ID: ' .. right_pane:pane_id())
 
    end)
 end
