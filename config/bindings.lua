@@ -2,7 +2,7 @@ local wezterm = require('wezterm')
 local platform = require('utils.platform')
 local backdrops = require('utils.backdrops')
 local act = wezterm.action
-
+local mux = wezterm.mux
 local mod = {}
 
 if platform.is_mac then
@@ -244,40 +244,16 @@ local mouse_bindings = {
 if platform.is_linux then
    wezterm.on('gui-startup', function(cmd)
       -- Create main window with normal font
-      local tab, pane, main_window = wezterm.mux.spawn_window(cmd or {})
-      local main_gui_window = main_window:gui_window()
-      main_gui_window:maximize()
-      
-      -- Create a second window with smaller font
-      local second_window = wezterm.mux.spawn_window({
-         args = { 'bash', '-c', 'neofetch; exec bash' },
-         position = { x = math.floor(main_gui_window:get_dimensions().pixel_width * 0.75), y = 0 },
-         width = math.floor(main_gui_window:get_dimensions().pixel_width * 0.25),
-         height = math.floor(main_gui_window:get_dimensions().pixel_height * 0.6),
-      })
-      
-      -- Configure second window
-      second_window:gui_window():set_config_overrides({
-         font_size = math.floor(main_gui_window:effective_config().font_size * 0.8),
-         window_decorations = "NONE",
-      })
-      
-      -- Create third window for bottom right
-      local third_window = wezterm.mux.spawn_window({
-         args = { 'htop', '-d', '3' },
-         position = {
-            x = math.floor(main_gui_window:get_dimensions().pixel_width * 0.75),
-            y = math.floor(main_gui_window:get_dimensions().pixel_height * 0.6)
-         },
-         width = math.floor(main_gui_window:get_dimensions().pixel_width * 0.25),
-         height = math.floor(main_gui_window:get_dimensions().pixel_height * 0.4),
-      })
-      
-      -- Configure third window
-      third_window:gui_window():set_config_overrides({
-         font_size = math.floor(main_gui_window:effective_config().font_size * 0.8),
-         window_decorations = "NONE",
-      })
+      local tab, pane, window = mux.spawn_window(cmd or {})
+      window:gui_window():maximize()
+      wezterm.log_info('Initial pane created, ID: ' .. pane:pane_id())
+      -- Split the initial pane vertically (70% left, 30% right)
+      local right_pane = pane:split({ direction = 'Right', size = 0.3, args = { 'bash', '-c', 'neofetch; exec bash' } })
+      wezterm.log_info('Right pane split with neofetch, ID: ' .. right_pane:pane_id())
+      -- Split the right pane horizontally (60% top, 40% bottom)
+      local bottom_pane = right_pane:split({ direction = 'Bottom', size = 0.6, args = { 'htop', '-d', '3' } })
+      wezterm.log_info('Bottom-right pane split with htop, ID: ' .. bottom_pane:pane_id())
+
    end)
 end
 
